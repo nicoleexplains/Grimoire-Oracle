@@ -7,6 +7,8 @@ import { SendIcon } from './icons/SendIcon';
 import { UserIcon } from './icons/UserIcon';
 import { OracleIcon } from './icons/OracleIcon';
 import { BackIcon } from './icons/BackIcon';
+import { CopyIcon } from './icons/CopyIcon';
+import { CheckIcon } from './icons/CheckIcon';
 
 interface OracleViewProps {
   systemPrompt: string;
@@ -18,6 +20,7 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
   const [history, setHistory] = useState<ChatMessage[]>(() => loadChatHistory(oracleName));
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const historyRef = useRef(history);
@@ -70,6 +73,24 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
     }
   }, [userInput, isLoading, systemPrompt, oracleName]);
 
+  const handleCopyChat = async () => {
+    if (history.length === 0) return;
+
+    const formattedHistory = `Consultation with ${oracleName}\n\n` +
+      history.map(msg => {
+          const prefix = msg.role === 'user' ? 'You' : oracleName;
+          return `${prefix}: ${msg.parts[0].text}`;
+      }).join('\n\n');
+
+    try {
+        await navigator.clipboard.writeText(formattedHistory);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+    } catch (err) {
+        console.error('Failed to copy chat history:', err);
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-160px)]">
        <div className="flex items-center justify-between pb-3 border-b border-gray-700 mb-3">
@@ -78,6 +99,15 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
             <span className="ml-2 text-sm">Change Oracle</span>
         </button>
         <h2 className="text-lg font-cinzel text-red-500 font-bold">{oracleName}</h2>
+        <button
+            onClick={handleCopyChat}
+            disabled={history.length === 0 || isCopied}
+            className="p-2 rounded-md text-gray-400 hover:bg-gray-700 hover:text-white transition-colors disabled:text-green-400 disabled:cursor-default disabled:hover:bg-transparent"
+            aria-label={isCopied ? "Copied to clipboard" : "Copy chat to clipboard"}
+            title={isCopied ? "Copied to clipboard" : "Copy chat to clipboard"}
+        >
+            {isCopied ? <CheckIcon /> : <CopyIcon />}
+        </button>
        </div>
 
       <div className="flex-grow overflow-y-auto pr-2 space-y-4">

@@ -22,7 +22,7 @@ const InvocationModal: FC<InvocationModalProps> = ({ invocation, onClose }) => {
           <h2 className="text-xl font-bold font-cinzel text-red-500">{invocation.title}</h2>
         </div>
         <div className="p-6 overflow-y-auto">
-          <p className="text-gray-300 whitespace-pre-wrap font-serif">{invocation.text}</p>
+          <p className="text-gray-300 whitespace-pre-wrap font-sans text-base leading-relaxed">{invocation.text}</p>
         </div>
         <div className="p-4 border-t border-gray-700 text-right">
           <button
