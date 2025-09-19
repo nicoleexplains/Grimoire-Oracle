@@ -94,7 +94,7 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
   return (
     <div className="flex flex-col h-[calc(100vh-160px)]">
        <div className="flex items-center justify-between pb-3 border-b border-gray-700 mb-3">
-        <button onClick={onBack} className="flex items-center text-gray-400 hover:text-white transition-colors">
+        <button onClick={onBack} className="flex items-center text-gray-400 hover:text-white transition-colors" title="Change Oracle">
             <BackIcon />
             <span className="ml-2 text-sm">Change Oracle</span>
         </button>
@@ -103,8 +103,8 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
             onClick={handleCopyChat}
             disabled={history.length === 0 || isCopied}
             className="p-2 rounded-md text-gray-400 hover:bg-gray-700 hover:text-white transition-colors disabled:text-green-400 disabled:cursor-default disabled:hover:bg-transparent"
-            aria-label={isCopied ? "Copied to clipboard" : "Copy chat to clipboard"}
-            title={isCopied ? "Copied to clipboard" : "Copy chat to clipboard"}
+            aria-label={isCopied ? "Copied!" : "Copy chat"}
+            title={isCopied ? "Copied!" : "Copy chat"}
         >
             {isCopied ? <CheckIcon /> : <CopyIcon />}
         </button>
