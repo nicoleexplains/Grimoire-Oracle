@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { FC, FormEvent } from 'react';
 import type { ChatMessage } from '../types';
 import { getOracleStream } from '../services/geminiService';
+import { loadChatHistory, saveChatHistory } from '../services/historyService';
 import { SendIcon } from './icons/SendIcon';
 import { UserIcon } from './icons/UserIcon';
 import { OracleIcon } from './icons/OracleIcon';
@@ -14,10 +15,15 @@ interface OracleViewProps {
 }
 
 const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) => {
-  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [history, setHistory] = useState<ChatMessage[]>(() => loadChatHistory(oracleName));
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const historyRef = useRef(history);
+  useEffect(() => {
+      historyRef.current = history;
+  }, [history]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -28,13 +34,12 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
     if (!userInput.trim() || isLoading) return;
 
     const newUserMessage: ChatMessage = { role: 'user', parts: [{ text: userInput }] };
-    const currentHistory = [...history, newUserMessage];
-    setHistory(currentHistory);
+    setHistory(prev => [...prev, newUserMessage]);
     setUserInput('');
     setIsLoading(true);
 
     try {
-      const stream = await getOracleStream(systemPrompt, currentHistory);
+      const stream = await getOracleStream(systemPrompt, [...historyRef.current, newUserMessage]);
       let newModelMessage: ChatMessage = { role: 'model', parts: [{ text: '' }] };
       setHistory(prev => [...prev, newModelMessage]);
 
@@ -61,8 +66,9 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
       setHistory(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      saveChatHistory(oracleName, historyRef.current);
     }
-  }, [userInput, isLoading, history, systemPrompt]);
+  }, [userInput, isLoading, systemPrompt, oracleName]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-160px)]">
@@ -94,7 +100,11 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
            <div className="flex items-start gap-3">
              <OracleIcon />
              <div className="max-w-xs md:max-w-md p-3 rounded-lg bg-gray-700">
-               <span className="animate-pulse">...</span>
+                <div className="flex space-x-1.5">
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse [animation-delay:0.1s]"></div>
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                </div>
              </div>
            </div>
         )}

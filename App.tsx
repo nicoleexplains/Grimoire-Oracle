@@ -3,6 +3,7 @@ import type { FC } from 'react';
 import { View, Oracle } from './types';
 import OracleView from './components/OracleView';
 import InvocationsView from './components/InvocationsView';
+import HistoryView from './components/HistoryView';
 import NavBar from './components/NavBar';
 import OracleSelectionView from './components/OracleSelectionView';
 import { ORACLES } from './constants';
@@ -15,8 +16,34 @@ const App: FC = () => {
     setSelectedOracle(oracle);
   };
 
+  const handleSelectConversation = (oracle: Oracle) => {
+    setSelectedOracle(oracle);
+    setCurrentView(View.Oracle);
+  }
+
   const handleReturnToSelection = () => {
     setSelectedOracle(null);
+  };
+
+  const renderMainView = () => {
+    switch (currentView) {
+      case View.Invocations:
+        return <InvocationsView />;
+      case View.History:
+        return <HistoryView onSelectConversation={handleSelectConversation} />;
+      case View.Oracle:
+      default:
+        return !selectedOracle ? (
+          <OracleSelectionView oracles={ORACLES} onSelectOracle={handleSelectOracle} />
+        ) : (
+          <OracleView 
+            key={selectedOracle.name} 
+            systemPrompt={selectedOracle.systemPrompt}
+            oracleName={selectedOracle.name}
+            onBack={handleReturnToSelection}
+          />
+        );
+    }
   };
 
   return (
@@ -27,19 +54,7 @@ const App: FC = () => {
       </header>
       
       <main className="flex-grow p-4 overflow-y-auto">
-        {currentView === View.Oracle && (
-          !selectedOracle ? (
-            <OracleSelectionView oracles={ORACLES} onSelectOracle={handleSelectOracle} />
-          ) : (
-            <OracleView 
-              key={selectedOracle.name} 
-              systemPrompt={selectedOracle.systemPrompt}
-              oracleName={selectedOracle.name}
-              onBack={handleReturnToSelection}
-            />
-          )
-        )}
-        {currentView === View.Invocations && <InvocationsView />}
+        {renderMainView()}
       </main>
       
       <footer className="sticky bottom-0 bg-gray-800 border-t-2 border-red-800">

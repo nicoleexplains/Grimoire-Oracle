@@ -1,6 +1,7 @@
 export enum View {
   Oracle,
   Invocations,
+  History,
 }
 
 export interface Invocation {
@@ -21,4 +22,5 @@ export interface Oracle {
   name: string;
   description: string;
   systemPrompt: string;
+  imageUrl: string;
 }
