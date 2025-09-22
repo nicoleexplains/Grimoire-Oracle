@@ -10,6 +10,24 @@ import { OracleIcon } from './icons/OracleIcon';
 import { BackIcon } from './icons/BackIcon';
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
+import { MicrophoneIcon } from './icons/MicrophoneIcon';
+import { StopIcon } from './icons/StopIcon';
+
+// FIX: Define a minimal interface for the browser's SpeechRecognition API
+// to resolve the TypeScript error. This API is not standard and may not
+// be in the default TS DOM type definitions.
+interface SpeechRecognition {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: () => void;
+  onresult: (event: any) => void;
+  onspeechend: () => void;
+  onend: () => void;
+  onerror: (event: any) => void;
+  start: () => void;
+  stop: () => void;
+}
 
 interface OracleViewProps {
   systemPrompt: string;
@@ -23,7 +41,12 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const hasSpeechRecognition = !!SpeechRecognitionAPI;
 
   const historyRef = useRef(history);
   useEffect(() => {
@@ -33,6 +56,14 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   const handleSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
@@ -74,6 +105,52 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
       saveChatHistory(oracleName, historyRef.current);
     }
   }, [userInput, isLoading, systemPrompt, oracleName]);
+  
+  const handleMicClick = () => {
+    if (!hasSpeechRecognition) {
+      alert("Voice recognition is not supported by your browser.");
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const recognition: SpeechRecognition = new SpeechRecognitionAPI();
+    recognitionRef.current = recognition;
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const speechResult = event.results[0][0].transcript;
+      setUserInput(prev => (prev ? `${prev.trim()} ${speechResult}` : speechResult));
+    };
+
+    recognition.onspeechend = () => {
+      recognition.stop();
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error(`Speech recognition error: ${event.error}`);
+      alert(`An error occurred during voice recognition: ${event.error}`);
+      setIsRecording(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.start();
+  };
+
 
   const handleCopyChat = async () => {
     if (history.length === 0) return;
@@ -178,11 +255,27 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
           type="text"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
-          placeholder="Speak to the Oracle..."
+          placeholder={isRecording ? "Listening..." : "Speak to the Oracle..."}
           className="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
-        <button type="submit" disabled={isLoading} className="bg-red-700 text-white p-3 rounded-lg disabled:bg-gray-600 hover:bg-red-600 transition-colors">
+        {hasSpeechRecognition && (
+          <button
+            type="button"
+            onClick={handleMicClick}
+            disabled={isLoading}
+            className={`flex-shrink-0 p-3 rounded-lg transition-colors duration-200 ${
+              isRecording
+                ? 'bg-yellow-500 text-white animate-pulse'
+                : 'bg-gray-700 text-white hover:bg-gray-600'
+            } disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed`}
+            aria-label={isRecording ? 'Stop recording' : 'Start voice input'}
+            title={isRecording ? 'Stop recording' : 'Start voice input'}
+          >
+            {isRecording ? <StopIcon /> : <MicrophoneIcon />}
+          </button>
+        )}
+        <button type="submit" disabled={isLoading || !userInput.trim()} className="bg-red-700 text-white p-3 rounded-lg disabled:bg-gray-600 hover:bg-red-600 transition-colors">
           <SendIcon />
         </button>
       </form>

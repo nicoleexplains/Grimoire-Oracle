@@ -1,5 +1,7 @@
 {
   "name": "Grimoire Oracle",
   "description": "An interactive digital grimoire based on the 'Heptameron' and 'The Magus'. Converse with an AI spirit oracle, and access a collection of magical invocations and conjurations from the text.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }
