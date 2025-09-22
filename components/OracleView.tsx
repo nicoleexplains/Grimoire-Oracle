@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { FC, FormEvent } from 'react';
 import type { ChatMessage } from '../types';
@@ -21,6 +22,7 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const historyRef = useRef(history);
@@ -91,12 +93,27 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
     }
   };
 
+  const handleCopyMessage = async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageIndex(index);
+      setTimeout(() => setCopiedMessageIndex(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy message:', err);
+    }
+  };
+
+
   return (
-    <div className="flex flex-col h-[calc(100vh-160px)]">
+    <div className="flex flex-col h-full">
        <div className="flex items-center justify-between pb-3 border-b border-gray-700 mb-3">
-        <button onClick={onBack} className="flex items-center text-gray-400 hover:text-white transition-colors" title="Change Oracle">
+        <button
+            onClick={onBack}
+            className="p-2 rounded-md text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+            title="Change Oracle"
+            aria-label="Change Oracle"
+        >
             <BackIcon />
-            <span className="ml-2 text-sm">Change Oracle</span>
         </button>
         <h2 className="text-lg font-cinzel text-red-500 font-bold">{oracleName}</h2>
         <button
@@ -118,12 +135,28 @@ const OracleView: FC<OracleViewProps> = ({ systemPrompt, oracleName, onBack }) =
            </div>
         )}
         {history.map((msg, index) => (
-          <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-            {msg.role === 'model' && <OracleIcon />}
-            <div className={`max-w-xs md:max-w-md p-3 rounded-lg ${msg.role === 'user' ? 'bg-red-800 text-white' : 'bg-gray-700'}`}>
-              <p className="whitespace-pre-wrap">{msg.parts[0].text}</p>
-            </div>
-             {msg.role === 'user' && <UserIcon />}
+          <div key={index} className={`group flex items-center gap-2 ${msg.role === 'user' ? 'justify-end flex-row-reverse' : 'justify-start'}`}>
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                  {msg.role === 'model' ? <OracleIcon /> : <UserIcon />}
+              </div>
+
+              {/* Bubble */}
+              <div className={`max-w-xs md:max-w-md p-3 rounded-lg ${msg.role === 'user' ? 'bg-red-800 text-white' : 'bg-gray-700'}`}>
+                  <p className="whitespace-pre-wrap">{msg.parts[0].text}</p>
+              </div>
+
+              {/* Copy Button */}
+              <div className="w-8 flex-shrink-0 flex items-center justify-center">
+                  <button
+                      onClick={() => handleCopyMessage(msg.parts[0].text, index)}
+                      className="p-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white disabled:text-green-400"
+                      aria-label={copiedMessageIndex === index ? 'Copied' : 'Copy message'}
+                      disabled={copiedMessageIndex === index}
+                  >
+                      {copiedMessageIndex === index ? <CheckIcon /> : <CopyIcon />}
+                  </button>
+              </div>
           </div>
         ))}
         {isLoading && history[history.length -1]?.role !== 'model' && (

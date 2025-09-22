@@ -46,6 +46,9 @@ const App: FC = () => {
     }
   };
 
+  const isChatView = currentView === View.Oracle && selectedOracle;
+  const mainClasses = `flex-grow p-4 ${isChatView ? 'flex flex-col' : 'overflow-y-auto'}`;
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 flex flex-col max-w-lg mx-auto shadow-2xl shadow-red-900/20">
       <header className="p-4 bg-gray-800 border-b-2 border-red-800 text-center">
@@ -53,7 +56,7 @@ const App: FC = () => {
         <p className="text-sm text-gray-400">Consult the Spirits of the Heptameron & The Magus</p>
       </header>
       
-      <main className="flex-grow p-4 overflow-y-auto">
+      <main className={mainClasses}>
         {renderMainView()}
       </main>
       
